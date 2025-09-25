@@ -1,17 +1,19 @@
-﻿namespace Ldd.ChuvashDictionary.Domain;
+﻿using System.Collections.ObjectModel;
 
-public sealed class DictionaryWord(Guid id, string word, IEnumerable<WordMeaning> meanings)
+namespace Ldd.ChuvashDictionary.Domain;
+
+public sealed class DictionaryWord(Guid id, string word, IEnumerable<WordProForm> proForms)
 {
-    public DictionaryWord(Guid id, string word, IEnumerable<WordMeaning> meanings, IEnumerable<Guid> linkedWords) : this(id, word, meanings)
+    public DictionaryWord(Guid id, string word, IEnumerable<WordProForm> meanings, IEnumerable<Guid> linkedWords) : this(id, word, meanings)
     {
-        LinkedWords = [.. linkedWords];
+        LinkedWords = new([.. linkedWords]);
     }
 
     public Guid Id { get; } = id;
 
     public string Word { get; } = word;
 
-    public WordMeaning[] Meanings { get; } = [.. meanings];
+    public ReadOnlyCollection<WordProForm> ProForms { get; } = new([.. proForms]);
 
-    public Guid[] LinkedWords { get; } = [];
+    public ReadOnlyCollection<Guid> LinkedWords { get; } = new([]);
 }

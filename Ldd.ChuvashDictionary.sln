@@ -12,6 +12,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".SolutionItems", ".Solution
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Domain", "Ldd.ChuvashDictionary.Domain\Ldd.ChuvashDictionary.Domain.csproj", "{4AF64422-3D88-4CDB-ABAE-1AF1430D71F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Convertion", "Ldd.ChuvashDictionary.Convertion\Ldd.ChuvashDictionary.Convertion.csproj", "{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Console", "Ldd.ChuvashDictionary.Console\Ldd.ChuvashDictionary.Console.csproj", "{8DEB0D85-A8F4-442A-B939-0EF89D75531C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +30,14 @@ Global
 		{4AF64422-3D88-4CDB-ABAE-1AF1430D71F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AF64422-3D88-4CDB-ABAE-1AF1430D71F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4AF64422-3D88-4CDB-ABAE-1AF1430D71F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
