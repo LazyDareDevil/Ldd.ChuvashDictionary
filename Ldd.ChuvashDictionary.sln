@@ -1,13 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35521.163 d17.12
+VisualStudioVersion = 17.12.35521.163
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary", "Ldd.ChuvashDictionary\Ldd.ChuvashDictionary.csproj", "{2453C100-34DF-4D10-8AD0-A293936D71B4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".SolutionItems", ".SolutionItems", "{23BB350B-4C0A-4AAE-91EB-BAA77932B7D7}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		userdata.txt = userdata.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Domain", "Ldd.ChuvashDictionary.Domain\Ldd.ChuvashDictionary.Domain.csproj", "{4AF64422-3D88-4CDB-ABAE-1AF1430D71F0}"
@@ -15,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Convertion", "Ldd.ChuvashDictionary.Convertion\Ldd.ChuvashDictionary.Convertion.csproj", "{6F9C2A0B-262C-460F-AC6F-05CC9D0CFF88}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Console", "Ldd.ChuvashDictionary.Console\Ldd.ChuvashDictionary.Console.csproj", "{8DEB0D85-A8F4-442A-B939-0EF89D75531C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ldd.ChuvashDictionary.Serialization.Xml", "Ldd.ChuvashDictionary.Serialization.Xml\Ldd.ChuvashDictionary.Serialization.Xml.csproj", "{2D012E39-385E-4E75-B8A4-33FFCB656B41}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +41,10 @@ Global
 		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8DEB0D85-A8F4-442A-B939-0EF89D75531C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D012E39-385E-4E75-B8A4-33FFCB656B41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D012E39-385E-4E75-B8A4-33FFCB656B41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D012E39-385E-4E75-B8A4-33FFCB656B41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D012E39-385E-4E75-B8A4-33FFCB656B41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

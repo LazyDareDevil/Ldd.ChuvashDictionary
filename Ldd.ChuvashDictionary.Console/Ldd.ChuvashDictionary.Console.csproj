@@ -9,6 +9,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ldd.ChuvashDictionary.Convertion\Ldd.ChuvashDictionary.Convertion.csproj" />
+    <ProjectReference Include="..\Ldd.ChuvashDictionary.Serialization.Xml\Ldd.ChuvashDictionary.Serialization.Xml.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+	  <None Include="userdata.txt">
+		  <Link>..\userdata.txt</Link>
+		  <TargetPath>userdata.txt</TargetPath>
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
 </Project>

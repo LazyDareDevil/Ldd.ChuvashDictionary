@@ -29,5 +29,5 @@ internal partial class MeaningTextKeys
     public static partial Regex RemoveHtmlItems();
 
     [GeneratedRegex("<br>")]
-    public static partial Regex SplitExamples();
+    public static partial Regex NewLine();
 }

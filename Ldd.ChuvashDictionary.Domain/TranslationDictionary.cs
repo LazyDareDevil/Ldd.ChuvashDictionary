@@ -2,11 +2,11 @@
 
 namespace Ldd.ChuvashDictionary.Domain;
 
-public sealed class TranslationDictionary(CultureInfo sourceLanguage, CultureInfo targetLanguage, IEnumerable<Guid> words)
+public sealed class TranslationDictionary(CultureInfo sourceLanguage, CultureInfo targetLanguage, IEnumerable<DictionaryWord> words)
 {
     public CultureInfo SourceLanguage { get; } = sourceLanguage;
 
     public CultureInfo TargetLanguage { get; } = targetLanguage;
 
-    public Guid[] Words { get; } = [.. words];
+    public DictionaryWord[] Words { get; } = [.. words];
 }

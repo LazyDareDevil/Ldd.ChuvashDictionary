@@ -16,4 +16,6 @@ public sealed class DictionaryWord(Guid id, string word, IEnumerable<WordProForm
     public ReadOnlyCollection<WordProForm> ProForms { get; } = new([.. proForms]);
 
     public ReadOnlyCollection<Guid> LinkedWords { get; } = new([]);
+
+    public string Description { get; set; } = string.Empty;
 }

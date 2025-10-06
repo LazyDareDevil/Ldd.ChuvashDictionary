@@ -1,28 +1,32 @@
-﻿using Ldd.ChuvashDictionary.Domain;
+﻿//#define SPLIT
+
+using Ldd.ChuvashDictionary.Domain;
+using System.Diagnostics;
+using System.Text;
+#if SPLIT
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.Text.RegularExpressions;
+#endif
 
 namespace Ldd.ChuvashDictionary.Convertion;
 
 public static class OldDictionaryConverter
 {
-    public static readonly Encoding FilesEncoding = Encoding.UTF8;
     public static readonly char TranslationsSeparator = '*';
 
-    public static IEnumerable<DictionaryWord> LoadDictionary(string wordListFile, string wordTranslationsFile)
+    public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader)
     {
         List<DictionaryWord> result = [];
-        using FileStream fs = new(wordListFile, FileMode.Open, FileAccess.Read);
-        using StreamReader sr = new(fs, FilesEncoding);
-        string translations = File.ReadAllText(wordTranslationsFile, FilesEncoding);
+        string translations = wordTranslationsReader.ReadToEnd();
         int translationFileLength = translations.Length;
-        string? line = sr.ReadLine();
+        string? line = wordListReader.ReadLine();
+        Encoding wordsEncoding = wordListReader.CurrentEncoding;
         while (line is not null)
         {
+            wordsEncoding.GetBytes(line);
             string[] parts = line.Split(':');
-            line = sr.ReadLine();
+            line = wordListReader.ReadLine();
             if (parts.Length != 2)
             {
                 continue;
@@ -47,10 +51,28 @@ public static class OldDictionaryConverter
                 break;
             }
 
+            if (currentWordTranslation.Contains("его и пуля не берет"))
+            {
+                Debug.WriteLine("");
+            }
+
+            string description = currentWordTranslation.Replace("<br>", "\n");
+            description = description.Replace("<i>", "");
+            description = description.Replace("</i>", "");
+            description = description.Replace("<b>", "");
+            description = description.Replace("</b>", "");
+            description = description.Replace("<p>", "");
+            description = description.Replace("</p>", "\n");
+            result.Add(new(Guid.NewGuid(), word, [])
+            {
+                Description = description,
+            });
+
+#if SPLIT
             List<ParsedProForm> allProForms = [];
             ParsedProForm? currentProform = null;
             ParsedProForm emptyProForm = new();
-            var split = MeaningTextKeys.SplitParagraph().Split(currentWordTranslation);
+            string[] split = MeaningTextKeys.SplitParagraph().Split(currentWordTranslation);
             foreach (string paragraph in split)
             {
                 if (string.IsNullOrEmpty(paragraph))
@@ -104,12 +126,13 @@ public static class OldDictionaryConverter
             }
 
             result.Add(new(Guid.NewGuid(), word, allProForms.Select(f => new WordProForm(f.Index, f.Description, f.Meanings.Select(m => new WordMeaning(m.Index, m.Meaning, m.Examples))))));
+#endif
         }
-
 
         return result;
     }
 
+#if SPLIT
     private static bool TryParseMeaning(string text, [MaybeNullWhen(false)] out ParsedMeaning meaning)
     {
         meaning = null;
@@ -233,4 +256,5 @@ public static class OldDictionaryConverter
 
         return true;
     }
+#endif
 }
