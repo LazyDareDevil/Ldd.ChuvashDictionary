@@ -17,6 +17,10 @@ else
 }
 
 //ConvertOldDictionary(di, encoding);
+Console.InputEncoding = Encoding.Unicode;
+Console.OutputEncoding = encoding;
+Console.WriteLine($"Input encoding: {Console.InputEncoding}");
+Console.WriteLine($"Output encoding: {Console.OutputEncoding}");
 TranslationDictionary[] dictionaries = [.. LoadNewDictionaries(di, encoding)];
 Dictionary<string, Guid> availableWords;
 Dictionary<Guid, WordTranslation> wordTranslations;
@@ -39,6 +43,7 @@ while (true)
         Console.WriteLine("Input 0 to exit application.");
         Console.WriteLine("Input 1 to change dictionary.");
         Console.WriteLine("Input word or it's part:");
+        // TODO: problem with input encoding!!!!
         word = Console.ReadLine();
         if (word is null)
         {
@@ -66,7 +71,7 @@ while (true)
 
 static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
 {
-    string[] foundWords = [.. availableWords.Keys.Where(w => w.Contains(searchWord, StringComparison.OrdinalIgnoreCase)).Order()];
+    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.Contains(searchWord, StringComparison.OrdinalIgnoreCase)).Order()];
     string? wordIndexInput;
     while (true)
     {
@@ -137,7 +142,7 @@ static bool TrySelectDictionary(TranslationDictionary[] dictionaries, out int di
 
 static IEnumerable<TranslationDictionary> LoadNewDictionaries(DirectoryInfo inputDirectory, Encoding encoding)
 {
-    foreach (FileInfo fileInfo in inputDirectory.EnumerateFiles())
+    foreach (FileInfo fileInfo in inputDirectory.EnumerateFiles("*.xml"))
     {
         using FileStream fs = new(fileInfo.FullName, FileMode.Open, FileAccess.Read);
         using StreamReader sr = new(fs, encoding);
@@ -163,29 +168,7 @@ static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encodi
     CultureInfo cultureFrom = new(langFrom);
     CultureInfo cultureTo = new(langTo);
 
-    {
-        using FileStream wordsfs = new(wordsFile, FileMode.Open, FileAccess.Read);
-        using StreamReader wordsReader = new(wordsfs, encoding);
-
-        using FileStream transfs = new(transFile, FileMode.Open, FileAccess.Read);
-        using StreamReader transReader = new(transfs, encoding);
-
-        IEnumerable<DictionaryWord> loadedWords = OldDictionaryConverter.LoadDictionary(wordsReader, transReader);
-        if (loadedWords.Any())
-        {
-            TranslationDictionary dictionary = new(cultureFrom, cultureTo, loadedWords);
-            string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}.xml");
-            using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
-            using StreamWriter sw = new(fs, encoding);
-            bool success = XmlDictionarySerializer.TrySerialize(dictionary, sw);
-            if (!success)
-            {
-                Console.WriteLine($"{cultureFrom.Name}_{cultureTo.Name} not saved");
-            }
-
-            sw.Flush();
-        }
-    }
+   // ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
 
     langFrom = lines[4];
     langTo = lines[5];
@@ -194,26 +177,42 @@ static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encodi
     cultureFrom = new(langFrom);
     cultureTo = new(langTo);
 
+    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
+}
+
+static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
+                                CultureInfo cultureFrom,
+                                CultureInfo cultureTo,
+                                string wordsFile,
+                                string transFile,
+                                Encoding encoding)
+{
+    using FileStream wordsfs = new(wordsFile, FileMode.Open, FileAccess.Read);
+    using StreamReader wordsReader = new(wordsfs, encoding);
+
+    using FileStream transfs = new(transFile, FileMode.Open, FileAccess.Read);
+    using StreamReader transReader = new(transfs, encoding);
+
+    DictionaryWord[] loadedWords = [.. OldDictionaryConverter.LoadDictionary(wordsReader, transReader, out string[] duplicatedWords)];
+    if (duplicatedWords.Length > 0)
     {
-        using FileStream wordsfs = new(wordsFile, FileMode.Open, FileAccess.Read);
-        using StreamReader wordsReader = new(wordsfs, encoding);
+        string wordsText = string.Join("\n", duplicatedWords);
+        string fileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}_duplicates.txt");
+        File.WriteAllText(fileName, wordsText);
+    }
 
-        using FileStream transfs = new(transFile, FileMode.Open, FileAccess.Read);
-        using StreamReader transReader = new(transfs, encoding);
-        IEnumerable<DictionaryWord> loadedWords = OldDictionaryConverter.LoadDictionary(wordsReader, transReader);
-        if (loadedWords.Any())
+    if (loadedWords.Length > 0)
+    {
+        TranslationDictionary dictionary = new(cultureFrom, cultureTo, loadedWords);
+        string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}.xml");
+        using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
+        using StreamWriter sw = new(fs, encoding);
+        bool success = XmlDictionarySerializer.TrySerialize(dictionary, sw);
+        if (!success)
         {
-            TranslationDictionary dictionary = new(cultureFrom, cultureTo, loadedWords);
-            string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}.xml");
-            using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
-            using StreamWriter sw = new(fs, encoding);
-            bool success = XmlDictionarySerializer.TrySerialize(dictionary, sw);
-            if (!success)
-            {
-                Console.WriteLine($"{cultureFrom.Name}_{cultureTo.Name} not saved");
-            }
-
-            sw.Flush();
+            Console.WriteLine($"{cultureFrom.Name}_{cultureTo.Name} not saved");
         }
+
+        sw.Flush();
     }
 }

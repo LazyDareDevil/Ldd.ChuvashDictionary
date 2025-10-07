@@ -16,10 +16,13 @@ public static class OldDictionaryConverter
     public static readonly char TranslationsSeparator = '*';
     public static readonly char EscapeSymbol = '\u0010';
 
-    public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader)
+    public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader, out string[] duplicatedWords)
     {
-        List<DictionaryWord> result = [];
+        // To keep duplicated words in one collection
+        Dictionary<string, List<DictionaryWord>> readedCollection = [];
         string translations = wordTranslationsReader.ReadToEnd();
+        // ** breaks search word translation in file
+        translations = translations.Replace("</p>**<p>", "</p>*<p>");
         int translationFileLength = translations.Length;
         string? line = wordListReader.ReadLine();
         Encoding wordsEncoding = wordListReader.CurrentEncoding;
@@ -53,6 +56,7 @@ public static class OldDictionaryConverter
             }
 
             currentWordTranslation = currentWordTranslation.Replace(EscapeSymbol.ToString(), "");
+
 #if SPLIT
             List<ParsedProForm> allProForms = [];
             ParsedProForm? currentProform = null;
@@ -115,13 +119,68 @@ public static class OldDictionaryConverter
 
             string description = MeaningTextKeys.RemoveHtmlItems().Replace(currentWordTranslation, "");
             description = MeaningTextKeys.NewLine().Replace(description, "\n");
-            result.Add(new(Guid.NewGuid(), word, new WordTranslation([], [])
+            DictionaryWord translation = new(Guid.NewGuid(), word, new WordTranslation([], [])
             {
                 Description = description,
-            }));
+            });
+            if (readedCollection.TryGetValue(word, out List<DictionaryWord>? words))
+            {
+                words.Add(translation);
+            }
+            else
+            {
+                readedCollection.Add(word, [translation]);
+            }
 #endif
         }
 
+        List<DictionaryWord> result = [];
+        List<string> duplicates = [];
+        foreach (KeyValuePair<string, List<DictionaryWord>> item in readedCollection)
+        {
+            if (item.Value.Count == 0)
+            {
+                continue;
+            }
+
+            if (item.Value.Count == 1)
+            {
+                result.Add(item.Value[0]);
+                continue;
+            }
+
+            duplicates.Add(item.Key);
+            int itemsCount = item.Value.Count;
+            bool equal = true;
+            List<WordProForm> forms = [..item.Value[0].Translation.ProForms];
+            List<Guid> linkedWords = [.. item.Value[0].Translation.LinkedWords];
+            string description = item.Value[0].Translation.Description;
+            for (int i = 1; i < itemsCount; i++)
+            {
+                if (!item.Value[i].Equals(item.Value[0]))
+                {
+                    equal = false;
+                    forms.AddRange(item.Value[i].Translation.ProForms);
+                    linkedWords.AddRange(item.Value[i].Translation.LinkedWords);
+                    description = description + "\n" + item.Value[i].Translation.Description;
+                }
+            }
+
+            if (equal)
+            {
+                result.Add(item.Value[0]);
+            }
+            else
+            {
+                // TODO: decide, what to do if translations are differ
+                result.Add(new DictionaryWord(Guid.NewGuid(), item.Key, new(forms, linkedWords.Distinct())
+                {
+                    Description = description
+                }));
+            }
+        }
+
+        duplicatedWords = [.. duplicates];
         return result;
     }
 
