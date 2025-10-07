@@ -25,9 +25,9 @@ internal partial class MeaningTextKeys
     [GeneratedRegex(@"<i>(?<meaning1>\w*)</i>.*<b>(?<meaning2>.*)</b>.*<br>(?<content>.*)", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     public static partial Regex MeaningIB();
 
-    [GeneratedRegex("(<i>)|(</i>)|(<b>)|(</b>)")]
+    [GeneratedRegex("(<i>)|(</i>)|(<b>)|(</b>)|(<p>)")]
     public static partial Regex RemoveHtmlItems();
 
-    [GeneratedRegex("<br>")]
+    [GeneratedRegex("(<br>)|(</p>)")]
     public static partial Regex NewLine();
 }

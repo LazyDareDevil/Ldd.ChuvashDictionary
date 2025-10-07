@@ -14,6 +14,7 @@ namespace Ldd.ChuvashDictionary.Convertion;
 public static class OldDictionaryConverter
 {
     public static readonly char TranslationsSeparator = '*';
+    public static readonly char EscapeSymbol = '\u0010';
 
     public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader)
     {
@@ -32,7 +33,7 @@ public static class OldDictionaryConverter
                 continue;
             }
 
-            string word = parts[0];
+            string word = parts[0].Replace(EscapeSymbol.ToString(), "");
             if (!int.TryParse(parts[1], out int currentTextPosition)
                 || currentTextPosition < 0
                 || currentTextPosition >= translationFileLength)
@@ -51,23 +52,7 @@ public static class OldDictionaryConverter
                 break;
             }
 
-            if (currentWordTranslation.Contains("его и пуля не берет"))
-            {
-                Debug.WriteLine("");
-            }
-
-            string description = currentWordTranslation.Replace("<br>", "\n");
-            description = description.Replace("<i>", "");
-            description = description.Replace("</i>", "");
-            description = description.Replace("<b>", "");
-            description = description.Replace("</b>", "");
-            description = description.Replace("<p>", "");
-            description = description.Replace("</p>", "\n");
-            result.Add(new(Guid.NewGuid(), word, [])
-            {
-                Description = description,
-            });
-
+            currentWordTranslation = currentWordTranslation.Replace(EscapeSymbol.ToString(), "");
 #if SPLIT
             List<ParsedProForm> allProForms = [];
             ParsedProForm? currentProform = null;
@@ -126,6 +111,14 @@ public static class OldDictionaryConverter
             }
 
             result.Add(new(Guid.NewGuid(), word, allProForms.Select(f => new WordProForm(f.Index, f.Description, f.Meanings.Select(m => new WordMeaning(m.Index, m.Meaning, m.Examples))))));
+#else
+
+            string description = MeaningTextKeys.RemoveHtmlItems().Replace(currentWordTranslation, "");
+            description = MeaningTextKeys.NewLine().Replace(description, "\n");
+            result.Add(new(Guid.NewGuid(), word, new WordTranslation([], [])
+            {
+                Description = description,
+            }));
 #endif
         }
 

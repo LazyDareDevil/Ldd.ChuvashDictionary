@@ -57,6 +57,7 @@ public static class XmlDictionarySerializer
             translations.Add(new(
                 id,
                 item.Word,
+                new WordTranslation(
                 item.ProForms.Select(i =>
                     new WordProForm(
                         i.Index,
@@ -64,9 +65,10 @@ public static class XmlDictionarySerializer
                         i.Meanings.Select(e =>
                             new WordMeaning(e.Index, e.Meaning, e.Examples)))),
                 item.LinkedWords)
-            {
-                Description = item.Description,
-            });
+                {
+                    Description = item.Description,
+                })
+            );
         }
 
         return new(ciFrom, ciTo, translations);
@@ -74,12 +76,6 @@ public static class XmlDictionarySerializer
 
     public static bool TrySerialize(TranslationDictionary dictionary, StreamWriter writer)
     {
-        XmlSerializerNamespaces emptyNamespaces = new([XmlQualifiedName.Empty]);
-        XmlWriterSettings settings = new()
-        {
-            Indent = true,
-            OmitXmlDeclaration = true,
-        };
         SerializableDictionary serializable = new()
         {
             LanguageFromCultureName = dictionary.SourceLanguage.Name,
@@ -88,9 +84,9 @@ public static class XmlDictionarySerializer
             {
                 Id = w.Id.ToString(),
                 Word = w.Word,
-                Description = w.Description,
-                LinkedWords = [.. w.LinkedWords],
-                ProForms = [.. w.ProForms.Select(p => new SerializableProForm()
+                Description = w.Translation.Description,
+                LinkedWords = [.. w.Translation.LinkedWords],
+                ProForms = [.. w.Translation.ProForms.Select(p => new SerializableProForm()
                 {
                     Index = p.Index,
                     Description = p.Description,
@@ -105,13 +101,20 @@ public static class XmlDictionarySerializer
         };
         try
         {
-            XmlSerializer serializer = new(typeof(SerializableDictionary));
+            XmlWriterSettings settings = new()
+            {
+                Indent = true,
+                OmitXmlDeclaration = true,
+            };
             using XmlWriter xmlwriter = XmlWriter.Create(writer, settings);
-            serializer.Serialize(writer, serializable, emptyNamespaces);
+            XmlSerializer serializer = new(typeof(SerializableDictionary));
+            XmlSerializerNamespaces emptyNamespaces = new([XmlQualifiedName.Empty]);
+            serializer.Serialize(xmlwriter, serializable, emptyNamespaces);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             return false;
         }
     }
