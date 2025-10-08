@@ -4,24 +4,30 @@ using Ldd.ChuvashDictionary.Serialization.Xml;
 using System.Globalization;
 using System.Text;
 
-Encoding encoding = new UTF8Encoding(true, false);
+Console.InputEncoding = Encodings.InputEncoding;
+Console.OutputEncoding = Encodings.OutputEncoding;
+
+// TODO: problem with input encoding!!!! UTF-8 not support cyrillyc and special symbols
+// Unicode encdong not pairs with data, loaded with UTF8 encoding
+
+TestEnconding();
+
 string dictionariesFolder = Path.Combine(Environment.CurrentDirectory, "Dictionaries");
 DirectoryInfo di;
-if (!Directory.Exists(dictionariesFolder)) 
+if (!Directory.Exists(dictionariesFolder))
 {
     di = Directory.CreateDirectory(dictionariesFolder);
 }
-else 
+else
 {
     di = new DirectoryInfo(dictionariesFolder);
 }
 
 //ConvertOldDictionary(di, encoding);
-Console.InputEncoding = Encoding.Unicode;
-Console.OutputEncoding = encoding;
+
 Console.WriteLine($"Input encoding: {Console.InputEncoding}");
 Console.WriteLine($"Output encoding: {Console.OutputEncoding}");
-TranslationDictionary[] dictionaries = [.. LoadNewDictionaries(di, encoding)];
+TranslationDictionary[] dictionaries = [.. LoadNewDictionaries(di, Encodings.DataEncoding)];
 Dictionary<string, Guid> availableWords;
 Dictionary<Guid, WordTranslation> wordTranslations;
 Console.WriteLine("Welcome to CHUVASH dictionary prepared by LazyDareDevil <Кӗпер тепӗр енӗ>");
@@ -39,11 +45,10 @@ while (true)
     wordTranslations = currentDictionary.Words.ToDictionary(w => w.Id, w => w.Translation);
     while (true)
     {
-        Console.WriteLine($"Current dictionary: {currentDictionary.SourceLanguage.NativeName} -> {currentDictionary.TargetLanguage.NativeName}");
+        Console.WriteLine($"Current dictionary: {currentDictionary.SourceLanguage.DisplayName} -> {currentDictionary.TargetLanguage.DisplayName}");
         Console.WriteLine("Input 0 to exit application.");
         Console.WriteLine("Input 1 to change dictionary.");
         Console.WriteLine("Input word or it's part:");
-        // TODO: problem with input encoding!!!!
         word = Console.ReadLine();
         if (word is null)
         {
@@ -51,6 +56,8 @@ while (true)
             continue;
         }
 
+        //word = UnicodeToUTF8(word, encoding);
+        //word = ConvertInputString(word, inputEncoding, encoding);
         if (int.TryParse(word, out int input))
         {
             if (input == 0)
@@ -71,7 +78,7 @@ while (true)
 
 static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
 {
-    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.Contains(searchWord, StringComparison.OrdinalIgnoreCase)).Order()];
+    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.Contains(searchWord, StringComparison.OrdinalIgnoreCase)).OrderBy(e => e.StartsWith(searchWord))];
     string? wordIndexInput;
     while (true)
     {
@@ -82,7 +89,7 @@ static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> ava
         }
 
         Console.WriteLine("Input 0 to do other search.");
-        Console.WriteLine("Input index of file to show translation:");
+        Console.WriteLine("Input index of word to show translation:");
         wordIndexInput = Console.ReadLine();
         if (!int.TryParse(wordIndexInput, out int wordIndex) ||
             wordIndex < 0 ||
@@ -117,7 +124,7 @@ static bool TrySelectDictionary(TranslationDictionary[] dictionaries, out int di
         Console.WriteLine("Currently available translations:");
         for (int i = 0; i < dictionaries.Length; i++)
         {
-            Console.WriteLine($"\t{i + 1}: {dictionaries[i].SourceLanguage.NativeName} -> {dictionaries[i].TargetLanguage.NativeName}");
+            Console.WriteLine($"\t{i + 1}: {dictionaries[i].SourceLanguage.DisplayName} -> {dictionaries[i].TargetLanguage.DisplayName}");
         }
 
         Console.WriteLine("Select dictionary by input index of selected one:");
@@ -168,7 +175,7 @@ static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encodi
     CultureInfo cultureFrom = new(langFrom);
     CultureInfo cultureTo = new(langTo);
 
-   // ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
+    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
 
     langFrom = lines[4];
     langTo = lines[5];
@@ -204,7 +211,7 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
     if (loadedWords.Length > 0)
     {
         TranslationDictionary dictionary = new(cultureFrom, cultureTo, loadedWords);
-        string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}.xml");
+        string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}_1.xml");
         using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
         using StreamWriter sw = new(fs, encoding);
         bool success = XmlDictionarySerializer.TrySerialize(dictionary, sw);
@@ -215,4 +222,59 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
 
         sw.Flush();
     }
+}
+
+static void TestEnconding()
+{
+    string t_utf8 = "тăван";
+    string t_unicode = "тӑван";
+
+    Console.WriteLine(t_utf8);
+    Console.WriteLine(UnicodeToUTF8(t_utf8));
+    Console.WriteLine(Utf16ToUtf8(t_utf8));
+    Console.WriteLine(ConvertInputString(t_utf8));
+
+    Console.WriteLine(t_unicode);
+    Console.WriteLine(UnicodeToUTF8(t_unicode));
+    Console.WriteLine(Utf16ToUtf8(t_unicode));
+    Console.WriteLine(ConvertInputString(t_unicode));
+
+    Console.WriteLine(Encodings.InputEncoding.EncodingName);
+    byte[] b = Encodings.InputEncoding.GetBytes(t_utf8);
+    Console.WriteLine($"{t_utf8}: {string.Join(',', b)}");
+    b = Encodings.InputEncoding.GetBytes(t_unicode);
+    Console.WriteLine($"{t_unicode}: {string.Join(',', b)}");
+
+    Console.WriteLine(Encodings.DataEncoding.EncodingName);
+    b = Encodings.DataEncoding.GetBytes(t_utf8);
+    Console.WriteLine($"{t_utf8}: {string.Join(',', b)}");
+    b = Encodings.DataEncoding.GetBytes(t_unicode);
+    Console.WriteLine($"{t_unicode}: {string.Join(',', b)}");
+}
+
+static string Utf16ToUtf8(string utf16String)
+{
+    string utf8String = string.Empty;
+    byte[] utf16Bytes = Encodings.InputEncoding.GetBytes(utf16String);
+    byte[] utf8Bytes = Encoding.Convert(Encodings.InputEncoding, Encodings.DataEncoding, utf16Bytes);
+    for (int i = 0; i < utf8Bytes.Length; i++)
+    {
+        byte[] utf8Container = [utf8Bytes[i], 0];
+        utf8String += BitConverter.ToChar(utf8Container, 0);
+    }
+
+    return utf8String;
+}
+
+static string ConvertInputString(string input)
+{
+    byte[] data = Encodings.InputEncoding.GetBytes(input);
+    byte[] resData = Encoding.Convert(Encodings.InputEncoding, Encodings.DataEncoding, data);
+    return Encodings.DataEncoding.GetString(resData);
+}
+
+static string UnicodeToUTF8(string text)
+{
+    var bytes = Encodings.InputEncoding.GetBytes(text);
+    return new string(bytes.Select(b => (char)b).ToArray());
 }
