@@ -3,6 +3,7 @@ using Ldd.ChuvashDictionary.Domain;
 using Ldd.ChuvashDictionary.Serialization.Xml;
 using System.Globalization;
 using System.Text;
+using System.Text.Unicode;
 
 Console.InputEncoding = Encodings.InputEncoding;
 Console.OutputEncoding = Encodings.OutputEncoding;
@@ -78,7 +79,7 @@ while (true)
 
 static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
 {
-    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.Contains(searchWord, StringComparison.OrdinalIgnoreCase)).OrderBy(e => e.StartsWith(searchWord))];
+    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.ToLower().Contains(searchWord, StringComparison.InvariantCultureIgnoreCase)).OrderBy(e => e.StartsWith(searchWord))];
     string? wordIndexInput;
     while (true)
     {
@@ -226,30 +227,55 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
 
 static void TestEnconding()
 {
+    // copy from utf-8 encoded text
     string t_utf8 = "тăван";
+    // input from keyboard
     string t_unicode = "тӑван";
 
     Console.WriteLine(t_utf8);
-    Console.WriteLine(UnicodeToUTF8(t_utf8));
-    Console.WriteLine(Utf16ToUtf8(t_utf8));
-    Console.WriteLine(ConvertInputString(t_utf8));
+    PrintChars(t_utf8);
+    PrintBytes(t_utf8, Encoding.UTF8);
+    PrintBytes(t_utf8, Encoding.Unicode);
+    Console.WriteLine(nameof(ConvertInputString));
+    string utf8toUni = ConvertInputString(t_utf8, Encoding.UTF8, Encoding.Unicode);
+    Console.WriteLine(utf8toUni);
+    PrintBytes(utf8toUni, Encoding.UTF8);
+    PrintBytes(utf8toUni, Encoding.Unicode);
+    bool equals = string.Equals(utf8toUni, t_unicode);
 
+    Console.WriteLine();
     Console.WriteLine(t_unicode);
-    Console.WriteLine(UnicodeToUTF8(t_unicode));
-    Console.WriteLine(Utf16ToUtf8(t_unicode));
-    Console.WriteLine(ConvertInputString(t_unicode));
+    PrintChars(t_unicode);
+    PrintBytes(t_unicode, Encoding.UTF8);
+    PrintBytes(t_unicode, Encoding.Unicode);
+    Console.WriteLine(nameof(ConvertInputString));
+    string unitoutf8 = ConvertInputString(t_unicode, Encoding.Unicode, Encoding.UTF8);
+    Console.WriteLine(unitoutf8);
+    PrintBytes(unitoutf8, Encoding.UTF8);
+    PrintBytes(unitoutf8, Encoding.Unicode);
+    equals = string.Equals(unitoutf8, t_utf8);
+    Console.WriteLine(nameof(Utf16ToUtf8));
+    unitoutf8 = Utf16ToUtf8(t_unicode);
+    Console.WriteLine(unitoutf8);
+    PrintBytes(unitoutf8, Encoding.UTF8);
+    PrintBytes(unitoutf8, Encoding.Unicode);
+    equals = string.Equals(unitoutf8, t_utf8);
 
-    Console.WriteLine(Encodings.InputEncoding.EncodingName);
-    byte[] b = Encodings.InputEncoding.GetBytes(t_utf8);
-    Console.WriteLine($"{t_utf8}: {string.Join(',', b)}");
-    b = Encodings.InputEncoding.GetBytes(t_unicode);
-    Console.WriteLine($"{t_unicode}: {string.Join(',', b)}");
+    Console.ReadLine();
+}
 
-    Console.WriteLine(Encodings.DataEncoding.EncodingName);
-    b = Encodings.DataEncoding.GetBytes(t_utf8);
-    Console.WriteLine($"{t_utf8}: {string.Join(',', b)}");
-    b = Encodings.DataEncoding.GetBytes(t_unicode);
-    Console.WriteLine($"{t_unicode}: {string.Join(',', b)}");
+static void PrintChars(string s)
+{
+    for (int i = 0; i < s.Length; i++)
+    {
+        Console.WriteLine("s[{0,1}] = '{1,-2}' {2,-50}", i, s[i], $"('\\u{(int)s[i]:x4}')");
+    }
+}
+
+static void PrintBytes(string text, Encoding encoding)
+{
+    byte[] b = encoding.GetBytes(text);
+    Console.WriteLine("{0,-20} {1,10}: [{2,-50}]", encoding.EncodingName, text, string.Join(", ", b));
 }
 
 static string Utf16ToUtf8(string utf16String)
@@ -266,15 +292,9 @@ static string Utf16ToUtf8(string utf16String)
     return utf8String;
 }
 
-static string ConvertInputString(string input)
+static string ConvertInputString(string text, Encoding input, Encoding output)
 {
-    byte[] data = Encodings.InputEncoding.GetBytes(input);
-    byte[] resData = Encoding.Convert(Encodings.InputEncoding, Encodings.DataEncoding, data);
-    return Encodings.DataEncoding.GetString(resData);
-}
-
-static string UnicodeToUTF8(string text)
-{
-    var bytes = Encodings.InputEncoding.GetBytes(text);
-    return new string(bytes.Select(b => (char)b).ToArray());
+    byte[] data = input.GetBytes(text);
+    byte[] resData = Encoding.Convert(input, output, data);
+    return output.GetString(resData);
 }
