@@ -1,17 +1,14 @@
-﻿using Ldd.ChuvashDictionary.Convertion;
+﻿using Ldd.ChuvashDictionary.Console;
+using Ldd.ChuvashDictionary.Convertion;
 using Ldd.ChuvashDictionary.Domain;
 using Ldd.ChuvashDictionary.Serialization.Xml;
 using System.Globalization;
 using System.Text;
-using System.Text.Unicode;
 
 Console.InputEncoding = Encodings.InputEncoding;
 Console.OutputEncoding = Encodings.OutputEncoding;
 
-// TODO: problem with input encoding!!!! UTF-8 not support cyrillyc and special symbols
-// Unicode encdong not pairs with data, loaded with UTF8 encoding
-
-TestEnconding();
+//TestEnconding();
 
 string dictionariesFolder = Path.Combine(Environment.CurrentDirectory, "Dictionaries");
 DirectoryInfo di;
@@ -24,12 +21,12 @@ else
     di = new DirectoryInfo(dictionariesFolder);
 }
 
-//ConvertOldDictionary(di, encoding);
+//ConvertOldDictionary(di);
 
 Console.WriteLine($"Input encoding: {Console.InputEncoding}");
 Console.WriteLine($"Output encoding: {Console.OutputEncoding}");
 TranslationDictionary[] dictionaries = [.. LoadNewDictionaries(di, Encodings.DataEncoding)];
-Dictionary<string, Guid> availableWords;
+List<TranslationPair> availableWords;
 Dictionary<Guid, WordTranslation> wordTranslations;
 Console.WriteLine("Welcome to CHUVASH dictionary prepared by LazyDareDevil <Кӗпер тепӗр енӗ>");
 string? word;
@@ -42,7 +39,7 @@ while (true)
     }
 
     TranslationDictionary currentDictionary = dictionaries[index];
-    availableWords = currentDictionary.Words.ToDictionary(w => w.Word, w => w.Id);
+    availableWords = [.. currentDictionary.Words.Select(w => new TranslationPair(w.Word, w.Id))];
     wordTranslations = currentDictionary.Words.ToDictionary(w => w.Id, w => w.Translation);
     while (true)
     {
@@ -57,8 +54,6 @@ while (true)
             continue;
         }
 
-        //word = UnicodeToUTF8(word, encoding);
-        //word = ConvertInputString(word, inputEncoding, encoding);
         if (int.TryParse(word, out int input))
         {
             if (input == 0)
@@ -77,16 +72,16 @@ while (true)
     }
 }
 
-static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
+static void ShowWordTranslations(string searchWord, List<TranslationPair> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
 {
-    string[] foundWords = [.. availableWords.Keys.Where(w => w.Length / 2 < searchWord.Length && w.ToLower().Contains(searchWord, StringComparison.InvariantCultureIgnoreCase)).OrderBy(e => e.StartsWith(searchWord))];
+    TranslationPair[] foundWords = [.. availableWords.Where(w => w.Word.Length / 2 < searchWord.Length && w.Word.Contains(searchWord, StringComparison.InvariantCultureIgnoreCase)).OrderByDescending(e => e.Word.StartsWith(searchWord))];
     string? wordIndexInput;
     while (true)
     {
         Console.WriteLine($"By search '{searchWord}' found words:");
         for (int i = 0; i < foundWords.Length; i++)
         {
-            Console.WriteLine($"\t{i + 1}: {foundWords[i]}");
+            Console.WriteLine($"\t{i + 1}: {foundWords[i].Word}");
         }
 
         Console.WriteLine("Input 0 to do other search.");
@@ -106,9 +101,9 @@ static void ShowWordTranslations(string searchWord, Dictionary<string, Guid> ava
         }
 
         wordIndex--;
-        string word = foundWords[wordIndex];
-        string description = wordTranslations[availableWords[word]].Description;
-        Console.WriteLine($"\t*{word}");
+        TranslationPair selectedWord = foundWords[wordIndex];
+        string description = wordTranslations[selectedWord.Translation].Description;
+        Console.WriteLine($"\t*{selectedWord.Word}");
         foreach (string split in description.Split("\n"))
         {
             Console.WriteLine($"\t{split}");
@@ -166,9 +161,9 @@ static IEnumerable<TranslationDictionary> LoadNewDictionaries(DirectoryInfo inpu
     }
 }
 
-static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encoding)
+static void ConvertOldDictionary(DirectoryInfo dictionaryFolder)
 {
-    string[] lines = File.ReadAllLines("userdata.txt", encoding);
+    string[] lines = File.ReadAllLines("userdata.txt");
     string langFrom = lines[0];
     string langTo = lines[1];
     string wordsFile = lines[2];
@@ -176,7 +171,7 @@ static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encodi
     CultureInfo cultureFrom = new(langFrom);
     CultureInfo cultureTo = new(langTo);
 
-    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
+    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, Encoding.UTF8);
 
     langFrom = lines[4];
     langTo = lines[5];
@@ -185,7 +180,7 @@ static void ConvertOldDictionary(DirectoryInfo dictionaryFolder, Encoding encodi
     cultureFrom = new(langFrom);
     cultureTo = new(langTo);
 
-    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, encoding);
+    ParseDictionaryFile(dictionaryFolder, cultureFrom, cultureTo, wordsFile, transFile, Encoding.UTF8);
 }
 
 static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
@@ -228,9 +223,11 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
 static void TestEnconding()
 {
     // copy from utf-8 encoded text
-    string t_utf8 = "тăван";
+    //string t_utf8 = "тăван";
+    string t_utf8 = "ăĕÿçĂĔŸÇ";
     // input from keyboard
-    string t_unicode = "тӑван";
+    //string t_unicode = "тӑван";
+    string t_unicode = "ӑӗӳҫӐӖӲҪ";
 
     Console.WriteLine(t_utf8);
     PrintChars(t_utf8);

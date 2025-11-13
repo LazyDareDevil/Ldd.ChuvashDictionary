@@ -15,6 +15,38 @@ public static class OldDictionaryConverter
 {
     public static readonly char TranslationsSeparator = '*';
     public static readonly char EscapeSymbol = '\u0010';
+    public static readonly char a1Symbol_utf8 = '\u0103';
+    public static readonly char e1Symbol_utf8 = '\u0115';
+    public static readonly char y1Symbol_utf8 = '\u00ff';
+    public static readonly char c1Symbol_utf8 = '\u00e7';
+    public static readonly char A1Symbol_utf8 = '\u0102';
+    public static readonly char E1Symbol_utf8 = '\u0114';
+    public static readonly char Y1Symbol_utf8 = '\u0178';
+    public static readonly char C1Symbol_utf8 = '\u00c7';
+
+    public static readonly char a1Symbol_unicode = '\u04d1';
+    public static readonly char e1Symbol_unicode = '\u04d7';
+    public static readonly char y1Symbol_unicode = '\u04f3';
+    public static readonly char c1Symbol_unicode = '\u04ab';
+    public static readonly char A1Symbol_unicode = '\u04d0';
+    public static readonly char E1Symbol_unicode = '\u04d6';
+    public static readonly char Y1Symbol_unicode = '\u04f2';
+    public static readonly char C1Symbol_unicode = '\u04aa';
+
+    /// <summary>
+    /// Converting from UTF-8 to Unocode symbols of CV-ru symbols
+    /// </summary>
+    private static string UTF8ToInicode(string s)
+    {
+        s = s.Replace(a1Symbol_utf8, a1Symbol_unicode);
+        s = s.Replace(e1Symbol_utf8, e1Symbol_unicode);
+        s = s.Replace(y1Symbol_utf8, y1Symbol_unicode);
+        s = s.Replace(c1Symbol_utf8, c1Symbol_unicode);
+        s = s.Replace(A1Symbol_utf8, A1Symbol_unicode);
+        s = s.Replace(E1Symbol_utf8, E1Symbol_unicode);
+        s = s.Replace(Y1Symbol_utf8, Y1Symbol_unicode);
+        return s.Replace(C1Symbol_utf8, C1Symbol_unicode);
+    }
 
     public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader, out string[] duplicatedWords)
     {
@@ -23,12 +55,12 @@ public static class OldDictionaryConverter
         string translations = wordTranslationsReader.ReadToEnd();
         // ** breaks search word translation in file
         translations = translations.Replace("</p>**<p>", "</p>*<p>");
+        translations = UTF8ToInicode(translations);
         int translationFileLength = translations.Length;
         string? line = wordListReader.ReadLine();
         Encoding wordsEncoding = wordListReader.CurrentEncoding;
         while (line is not null)
         {
-            wordsEncoding.GetBytes(line);
             string[] parts = line.Split(':');
             line = wordListReader.ReadLine();
             if (parts.Length != 2)
@@ -37,6 +69,7 @@ public static class OldDictionaryConverter
             }
 
             string word = parts[0].Replace(EscapeSymbol.ToString(), "");
+            word = UTF8ToInicode(word);
             if (!int.TryParse(parts[1], out int currentTextPosition)
                 || currentTextPosition < 0
                 || currentTextPosition >= translationFileLength)
