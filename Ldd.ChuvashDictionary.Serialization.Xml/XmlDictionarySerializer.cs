@@ -1,5 +1,6 @@
 ﻿using Ldd.ChuvashDictionary.Domain;
 using Ldd.ChuvashDictionary.Serialization.Xml.Serializable;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -8,7 +9,7 @@ namespace Ldd.ChuvashDictionary.Serialization.Xml;
 
 public static class XmlDictionarySerializer
 {
-    public static TranslationDictionary? Deserialize(StreamReader reader)
+    public static bool TryDeserialize(StreamReader reader, [MaybeNullWhen(false)] out DictionaryConfiguration configuration, out DictionaryWord[] words)
     {
         object? deserialized;
         try
@@ -18,12 +19,16 @@ public static class XmlDictionarySerializer
         }
         catch 
         {
-            return null;
+            configuration = null;
+            words = [];
+            return false;
         }
 
         if (deserialized is not SerializableDictionary dictionary)
         {
-            return null;
+            configuration = null;
+            words = [];
+            return false;
         }
 
         CultureInfo ciFrom;
@@ -34,7 +39,9 @@ public static class XmlDictionarySerializer
         }
         catch
         {
-            return null;
+            configuration = null;
+            words = [];
+            return false;
         }
 
         try
@@ -43,7 +50,9 @@ public static class XmlDictionarySerializer
         }
         catch
         {
-            return null;
+            configuration = null;
+            words = [];
+            return false;
         }
 
         List<DictionaryWord> translations = [];
@@ -71,16 +80,20 @@ public static class XmlDictionarySerializer
             );
         }
 
-        return new(ciFrom, ciTo, translations);
+        words = [.. translations];
+        configuration = new(ciFrom, ciTo, dictionary.Authors, dictionary.Description);
+        return true;
     }
 
-    public static bool TrySerialize(TranslationDictionary dictionary, StreamWriter writer)
+    public static bool TrySerialize(DictionaryConfiguration configuration, DictionaryWord[] words, StreamWriter writer)
     {
         SerializableDictionary serializable = new()
         {
-            LanguageFromCultureName = dictionary.SourceLanguage.Name,
-            LanguageToCultureName = dictionary.TargetLanguage.Name,
-            Words = [.. dictionary.Words.Select(w => new SerializableDictionaryWord()
+            LanguageFromCultureName = configuration.SourceLanguage.Name,
+            LanguageToCultureName = configuration.TargetLanguage.Name,
+            Authors = configuration.Authors,
+            Description = configuration.Description,
+            Words = [.. words.Select(w => new SerializableDictionaryWord()
             {
                 Id = w.Id.ToString(),
                 Word = w.Word,

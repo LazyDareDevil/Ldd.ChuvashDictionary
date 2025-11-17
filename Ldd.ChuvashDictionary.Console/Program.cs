@@ -43,7 +43,7 @@ while (true)
     wordTranslations = currentDictionary.Words.ToDictionary(w => w.Id, w => w.Translation);
     while (true)
     {
-        Console.WriteLine($"Current dictionary: {currentDictionary.SourceLanguage.DisplayName} -> {currentDictionary.TargetLanguage.DisplayName}");
+        Console.WriteLine($"Current dictionary: {currentDictionary.Configuration.SourceLanguage.DisplayName} -> {currentDictionary.Configuration.TargetLanguage.DisplayName}");
         Console.WriteLine("Input 0 to exit application.");
         Console.WriteLine("Input 1 to change dictionary.");
         Console.WriteLine("Input word or it's part:");
@@ -120,7 +120,7 @@ static bool TrySelectDictionary(TranslationDictionary[] dictionaries, out int di
         Console.WriteLine("Currently available translations:");
         for (int i = 0; i < dictionaries.Length; i++)
         {
-            Console.WriteLine($"\t{i + 1}: {dictionaries[i].SourceLanguage.DisplayName} -> {dictionaries[i].TargetLanguage.DisplayName}");
+            Console.WriteLine($"\t{i + 1}: {dictionaries[i].Configuration.SourceLanguage.DisplayName} -> {dictionaries[i].Configuration.TargetLanguage.DisplayName}");
         }
 
         Console.WriteLine("Select dictionary by input index of selected one:");
@@ -149,10 +149,9 @@ static IEnumerable<TranslationDictionary> LoadNewDictionaries(DirectoryInfo inpu
     {
         using FileStream fs = new(fileInfo.FullName, FileMode.Open, FileAccess.Read);
         using StreamReader sr = new(fs, encoding);
-        TranslationDictionary? dictionary = XmlDictionarySerializer.Deserialize(sr);
-        if (dictionary is not null)
+        if (XmlDictionarySerializer.TryDeserialize(sr, out DictionaryConfiguration? configuration, out DictionaryWord[] words))
         {
-            yield return dictionary;
+            yield return new(configuration, words);
         }
         else
         {
@@ -206,11 +205,11 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
 
     if (loadedWords.Length > 0)
     {
-        TranslationDictionary dictionary = new(cultureFrom, cultureTo, loadedWords);
+        DictionaryConfiguration configuration = new(cultureFrom, cultureTo, [], string.Empty);
         string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}_1.xml");
         using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
         using StreamWriter sw = new(fs, encoding);
-        bool success = XmlDictionarySerializer.TrySerialize(dictionary, sw);
+        bool success = XmlDictionarySerializer.TrySerialize(configuration, loadedWords, sw);
         if (!success)
         {
             Console.WriteLine($"{cultureFrom.Name}_{cultureTo.Name} not saved");

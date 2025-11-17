@@ -1,12 +1,17 @@
-﻿namespace Ldd.ChuvashDictionary.Domain;
+﻿using System.Globalization;
 
-public sealed class DictionaryConfiguration(string[] authors,
-                                            string otherInformation,
-                                            IEnumerable<TranslationDictionary> dictionaries)
+namespace Ldd.ChuvashDictionary.Domain;
+
+public sealed class DictionaryConfiguration(CultureInfo sourceLanguage, 
+                                            CultureInfo targetLanguage,
+                                            string[] authors,
+                                            string description)
 {
+    public CultureInfo SourceLanguage { get; } = sourceLanguage;
+
+    public CultureInfo TargetLanguage { get; } = targetLanguage;
+
     public string[] Authors { get; } = authors;
 
-    public string OtherInformation { get; } = otherInformation;
-
-    public TranslationDictionary[] Dictionaries { get; } = [.. dictionaries];
+    public string Description { get; } = description;
 }

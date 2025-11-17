@@ -11,6 +11,12 @@ public sealed class SerializableDictionary
     [XmlAttribute]
     public string LanguageToCultureName { get; set; } = string.Empty;
 
+    [XmlElement]
+    public string Description { get; set; } = string.Empty;
+
+    [XmlArrayItem("Author")]
+    public string[] Authors { get; set; } = [];
+
     [XmlArrayItem("Word")]
     public SerializableDictionaryWord[] Words { get; set; } = [];
 }
