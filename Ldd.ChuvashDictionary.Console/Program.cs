@@ -26,8 +26,6 @@ else
 Console.WriteLine($"Input encoding: {Console.InputEncoding}");
 Console.WriteLine($"Output encoding: {Console.OutputEncoding}");
 TranslationDictionary[] dictionaries = [.. LoadNewDictionaries(di, Encodings.DataEncoding)];
-List<TranslationPair> availableWords;
-Dictionary<Guid, WordTranslation> wordTranslations;
 Console.WriteLine("Welcome to CHUVASH dictionary prepared by LazyDareDevil <Кӗпер тепӗр енӗ>");
 string? word;
 while (true)
@@ -39,8 +37,6 @@ while (true)
     }
 
     TranslationDictionary currentDictionary = dictionaries[index];
-    availableWords = [.. currentDictionary.Words.Select(w => new TranslationPair(w.Word, w.Id))];
-    wordTranslations = currentDictionary.Words.ToDictionary(w => w.Id, w => w.Translation);
     while (true)
     {
         Console.WriteLine($"Current dictionary: {currentDictionary.Configuration.SourceLanguage.DisplayName} -> {currentDictionary.Configuration.TargetLanguage.DisplayName}");
@@ -68,13 +64,13 @@ while (true)
             }
         }
 
-        ShowWordTranslations(word, availableWords, wordTranslations);
+        ShowWordTranslations(word, currentDictionary.Words);
     }
 }
 
-static void ShowWordTranslations(string searchWord, List<TranslationPair> availableWords, Dictionary<Guid, WordTranslation> wordTranslations)
+static void ShowWordTranslations(string searchWord, DictionaryWord[] words)
 {
-    TranslationPair[] foundWords = [.. availableWords.Where(w => w.Word.Length / 2 < searchWord.Length && w.Word.Contains(searchWord, StringComparison.InvariantCultureIgnoreCase)).OrderByDescending(e => e.Word.StartsWith(searchWord))];
+    DictionaryWord[] foundWords = [.. words.Where(w => w.Word.Length / 2 < searchWord.Length && w.Word.Contains(searchWord, StringComparison.InvariantCultureIgnoreCase)).OrderByDescending(e => e.Word.StartsWith(searchWord))];
     string? wordIndexInput;
     while (true)
     {
@@ -100,14 +96,16 @@ static void ShowWordTranslations(string searchWord, List<TranslationPair> availa
             return;
         }
 
-        wordIndex--;
-        TranslationPair selectedWord = foundWords[wordIndex];
-        string description = wordTranslations[selectedWord.Translation].Description;
-        Console.WriteLine($"\t*{selectedWord.Word}");
-        foreach (string split in description.Split("\n"))
+        DictionaryWord selectedWord = foundWords[wordIndex - 1];
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine(selectedWord.Word);
+        foreach (WordMeaning meaning in selectedWord.Meanings)
         {
-            Console.WriteLine($"\t{split}");
+            Console.WriteLine($"\t{meaning.Meaning.Replace("\n", "\t\n")}");
+            Console.WriteLine($"\t{meaning.Description.Replace("\n", "\t\n")}");
         }
+
+        Console.ForegroundColor = ConsoleColor.White;
     }
 }
 
@@ -195,19 +193,12 @@ static void ParseDictionaryFile(DirectoryInfo dictionaryFolder,
     using FileStream transfs = new(transFile, FileMode.Open, FileAccess.Read);
     using StreamReader transReader = new(transfs, encoding);
 
-    DictionaryWord[] loadedWords = [.. OldDictionaryConverter.LoadDictionary(wordsReader, transReader, out string[] duplicatedWords)];
-    if (duplicatedWords.Length > 0)
-    {
-        string wordsText = string.Join("\n", duplicatedWords);
-        string fileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}_duplicates.txt");
-        File.WriteAllText(fileName, wordsText);
-    }
-
+    DictionaryWord[] loadedWords = [.. OldDictionaryConverter.LoadDictionary(wordsReader, transReader)];
     if (loadedWords.Length > 0)
     {
         DictionaryConfiguration configuration = new(cultureFrom, cultureTo, [], string.Empty);
-        string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}_1.xml");
-        using FileStream fs = new(newFileName, FileMode.Create, FileAccess.Write);
+        string newFileName = Path.Combine(dictionaryFolder.FullName, $"{cultureFrom.Name}_{cultureTo.Name}.xml");
+        using FileStream fs = new(newFileName, FileMode.CreateNew, FileAccess.Write);
         using StreamWriter sw = new(fs, encoding);
         bool success = XmlDictionarySerializer.TrySerialize(configuration, loadedWords, sw);
         if (!success)

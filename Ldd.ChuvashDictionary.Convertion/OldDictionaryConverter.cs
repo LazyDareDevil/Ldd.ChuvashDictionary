@@ -2,6 +2,7 @@
 
 using Ldd.ChuvashDictionary.Domain;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text;
 #if SPLIT
 using System.Collections.ObjectModel;
@@ -48,7 +49,7 @@ public static class OldDictionaryConverter
         return s.Replace(C1Symbol_utf8, C1Symbol_unicode);
     }
 
-    public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader, out string[] duplicatedWords)
+    public static IEnumerable<DictionaryWord> LoadDictionary(StreamReader wordListReader, StreamReader wordTranslationsReader)
     {
         // To keep duplicated words in one collection
         Dictionary<string, List<DictionaryWord>> readedCollection = [];
@@ -152,10 +153,7 @@ public static class OldDictionaryConverter
 
             string description = MeaningTextKeys.RemoveHtmlItems().Replace(currentWordTranslation, "");
             description = MeaningTextKeys.NewLine().Replace(description, "\n");
-            DictionaryWord translation = new(Guid.NewGuid(), word, new WordTranslation([], [])
-            {
-                Description = description,
-            });
+            DictionaryWord translation = new(word, [new WordMeaning(0, description, "")], []);
             if (readedCollection.TryGetValue(word, out List<DictionaryWord>? words))
             {
                 words.Add(translation);
@@ -168,7 +166,6 @@ public static class OldDictionaryConverter
         }
 
         List<DictionaryWord> result = [];
-        List<string> duplicates = [];
         foreach (KeyValuePair<string, List<DictionaryWord>> item in readedCollection)
         {
             if (item.Value.Count == 0)
@@ -182,38 +179,15 @@ public static class OldDictionaryConverter
                 continue;
             }
 
-            duplicates.Add(item.Key);
-            int itemsCount = item.Value.Count;
-            bool equal = true;
-            List<WordProForm> forms = [..item.Value[0].Translation.ProForms];
-            List<Guid> linkedWords = [.. item.Value[0].Translation.LinkedWords];
-            string description = item.Value[0].Translation.Description;
-            for (int i = 1; i < itemsCount; i++)
+            List<WordMeaning> meanings = [];
+            foreach (DictionaryWord word in item.Value)
             {
-                if (!item.Value[i].Equals(item.Value[0]))
-                {
-                    equal = false;
-                    forms.AddRange(item.Value[i].Translation.ProForms);
-                    linkedWords.AddRange(item.Value[i].Translation.LinkedWords);
-                    description = description + "\n" + item.Value[i].Translation.Description;
-                }
+                meanings.AddRange(word.Meanings);
             }
 
-            if (equal)
-            {
-                result.Add(item.Value[0]);
-            }
-            else
-            {
-                // TODO: decide, what to do if translations are differ
-                result.Add(new DictionaryWord(Guid.NewGuid(), item.Key, new(forms, linkedWords.Distinct())
-                {
-                    Description = description
-                }));
-            }
+            result.Add(new(item.Key, meanings, [..item.Value.SelectMany(e => e.LinkedWords).Distinct()]));
         }
 
-        duplicatedWords = [.. duplicates];
         return result;
     }
 

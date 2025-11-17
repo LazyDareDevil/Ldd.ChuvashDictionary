@@ -17,7 +17,7 @@ public static class XmlDictionarySerializer
             XmlSerializer serializer = new(typeof(SerializableDictionary), new XmlAttributeOverrides() { });
             deserialized = serializer.Deserialize(reader);
         }
-        catch 
+        catch
         {
             configuration = null;
             words = [];
@@ -58,25 +58,10 @@ public static class XmlDictionarySerializer
         List<DictionaryWord> translations = [];
         foreach (SerializableDictionaryWord item in dictionary.Words)
         {
-            if (!Guid.TryParse(item.Id, out Guid id))
-            {
-                id = Guid.NewGuid();
-            }
-
             translations.Add(new(
-                id,
                 item.Word,
-                new WordTranslation(
-                item.ProForms.Select(i =>
-                    new WordProForm(
-                        i.Index,
-                        i.Description,
-                        i.Meanings.Select(e =>
-                            new WordMeaning(e.Index, e.Meaning, e.Examples)))),
+                item.Meanings.Select(m => new WordMeaning(m.Index, m.Meaning, m.Description)), 
                 item.LinkedWords)
-                {
-                    Description = item.Description,
-                })
             );
         }
 
@@ -95,20 +80,13 @@ public static class XmlDictionarySerializer
             Description = configuration.Description,
             Words = [.. words.Select(w => new SerializableDictionaryWord()
             {
-                Id = w.Id.ToString(),
                 Word = w.Word,
-                Description = w.Translation.Description,
-                LinkedWords = [.. w.Translation.LinkedWords],
-                ProForms = [.. w.Translation.ProForms.Select(p => new SerializableProForm()
+                LinkedWords = [.. w.LinkedWords],
+                Meanings = [.. w.Meanings.Select(p => new SerializableWordMeaning()
                 {
                     Index = p.Index,
                     Description = p.Description,
-                    Meanings = [.. p.Meanings.Select(e => new SerializableWordMeaning()
-                    {
-                       Index = e.Index,
-                       Meaning = e.Meaning,
-                       Examples = [.. e.Examples]
-                    })]
+                    Meaning = p.Meaning
                 })],
             })]
         };

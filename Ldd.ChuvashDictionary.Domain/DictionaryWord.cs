@@ -1,10 +1,10 @@
 ﻿namespace Ldd.ChuvashDictionary.Domain;
 
-public sealed class DictionaryWord(Guid id, string word, WordTranslation translation)
+public sealed class DictionaryWord(string word, IEnumerable<WordMeaning> meanings, IEnumerable<string> linkedWords)
 {
-    public Guid Id { get; } = id;
-
     public string Word { get; } = word;
 
-    public WordTranslation Translation { get; } = translation;
+    public WordMeaning[] Meanings { get; } = [.. meanings];
+
+    public string[] LinkedWords { get; } = [.. linkedWords];
 }

@@ -1,12 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿namespace Ldd.ChuvashDictionary.Domain;
 
-namespace Ldd.ChuvashDictionary.Domain;
-
-public sealed class WordMeaning(int index, string meaning, IEnumerable<string> examples)
+public sealed class WordMeaning(int index, string meaning, string description)
 {
     public int Index { get; } = index;
 
     public string Meaning { get; } = meaning;
 
-    public ReadOnlyCollection<string> Examples { get; } = new([.. examples]);
+    public string Description { get; } = description;
 }

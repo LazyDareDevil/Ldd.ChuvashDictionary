@@ -9,6 +9,5 @@ public class SerializableWordMeaning
 
     public string Meaning { get; set; } = string.Empty;
 
-    [XmlArrayItem("Example")]
-    public string[] Examples { get; set; } = [];
+    public string Description { get; set; } = string.Empty;
 }
